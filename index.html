@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QuizMaster - Master Your Knowledge</title>
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&display=swap" rel="stylesheet">
+    
+    <!-- Tailwind CSS Setup -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        stone: {
+                            50: '#fafaf9',
+                            100: '#f5f5f4',
+                            200: '#e7e5e4',
+                            300: '#d6d3d1',
+                            400: '#a8a29e',
+                            500: '#78716c',
+                            600: '#57534e',
+                            700: '#44403c',
+                            800: '#292524',
+                            900: '#1c1917',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="./assets/css/style.css">
+    
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body class="bg-stone-50 font-sans selection:bg-stone-900 selection:text-white min-h-screen relative text-stone-900 overflow-y-auto">
+
+    <!-- Loading Overlay -->
+    <div id="global-loader" class="fixed inset-0 bg-stone-50 z-[100] flex items-center justify-center transition-opacity duration-300">
+        <div class="w-10 h-10 border-4 border-stone-200 border-t-stone-900 rounded-full animate-spin"></div>
+    </div>
+
+    <!-- Error/Toast Notification Container -->
+    <div id="toast-container" class="fixed bottom-4 right-4 z-50 flex flex-col gap-2"></div>
+
+    <!-- Share Modal Container (Hidden by default) -->
+    <div id="share-modal-container" class="hidden fixed inset-0 z-[100] items-center justify-center p-4 bg-stone-900/40 backdrop-blur-sm opacity-0 transition-opacity duration-300">
+    </div>
+
+    <!-- Confirm Modal Container (Hidden by default) -->
+    <div id="confirm-modal-container" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-[110] items-center justify-center p-4 opacity-0 transition-opacity duration-300">
+    </div>
+
+    <!-- Navbar -->
+    <nav class="sticky top-0 z-40 bg-white/80 backdrop-blur-md border-b border-stone-200 px-6 py-4 flex items-center justify-between transition-all duration-300" id="navbar">
+        <div class="flex items-center gap-2 cursor-pointer" onclick="window.app.navigate('home')">
+            <div class="w-10 h-10 bg-stone-900 rounded-xl flex items-center justify-center text-white font-bold text-xl">Q</div>
+            <span class="text-xl font-bold tracking-tight text-stone-900 hidden sm:block">QuizMaster</span>
+        </div>
+        
+        <!-- Auth / Nav Actions injected here -->
+        <div id="nav-actions" class="flex items-center gap-4 sm:gap-6">
+            <!-- Dynamically populated by JS based on user state -->
+        </div>
+    </nav>
+
+    <!-- Main Content Area -->
+    <main class="pb-20 pt-8" id="main-content">
+        <!-- Landing / Unauthenticated View -->
+        <section id="view-landing" class="hidden view-section flex-col items-center justify-center min-h-[70vh] px-6 text-center transform transition-all duration-500 opacity-0 translate-y-4">
+            <div class="max-w-2xl">
+                <h1 class="text-5xl md:text-8xl font-black text-stone-900 tracking-tighter leading-none mb-6">
+                    MASTER YOUR <span class="text-stone-400">KNOWLEDGE.</span>
+                </h1>
+                <p class="text-lg md:text-xl text-stone-500 mb-10 max-w-lg mx-auto leading-relaxed">
+                    The ultimate platform for creating, taking, and tracking MCQ quizzes. Simple, elegant, and powerful.
+                </p>
+                <div id="landing-error" class="hidden mb-6 p-4 bg-red-50 text-red-700 rounded-2xl text-sm text-left max-w-lg mx-auto flex gap-3 items-start">
+                    <i data-lucide="alert-circle" class="shrink-0 mt-0.5 w-5 h-5"></i>
+                    <span id="landing-error-text"></span>
+                </div>
+                <button id="btn-login" class="px-8 md:px-10 py-4 md:py-5 bg-stone-900 text-white rounded-full font-bold text-base md:text-lg hover:bg-stone-800 transition-all shadow-2xl shadow-stone-300 flex items-center gap-3 mx-auto">
+                    <span id="login-spinner" class="hidden"><i data-lucide="loader-2" class="w-5 h-5 animate-spin"></i></span>
+                    <span id="login-text">Get Started with Google</span>
+                    <i data-lucide="chevron-right" class="w-5 h-5" id="login-icon"></i>
+                </button>
+            </div>
+        </section>
+
+        <!-- Home View (Topics/Grid) -->
+        <section id="view-home" class="hidden view-section max-w-6xl mx-auto px-6 transform transition-all duration-300 opacity-0 translate-y-4">
+            <!-- Populated by JS -->
+        </section>
+
+        <!-- Quiz Player View -->
+        <section id="view-play" class="hidden view-section max-w-3xl mx-auto px-6 transform transition-all duration-300 opacity-0 translate-y-4">
+             <!-- Populated by JS -->
+        </section>
+
+        <!-- Leaderboard View -->
+        <section id="view-leaderboard" class="hidden view-section max-w-4xl mx-auto px-6 transform transition-all duration-300 opacity-0 translate-y-4">
+             <!-- Populated by JS -->
+        </section>
+
+        <!-- Results / History View -->
+        <section id="view-results" class="hidden view-section max-w-4xl mx-auto px-6 transform transition-all duration-300 opacity-0 translate-y-4">
+             <!-- Populated by JS -->
+        </section>
+        
+        <!-- Result Review View -->
+        <section id="view-review" class="hidden view-section max-w-4xl mx-auto px-6 transform transition-all duration-300 opacity-0 translate-y-4">
+             <!-- Populated by JS -->
+        </section>
+
+        <!-- Profile View -->
+        <section id="view-profile" class="hidden view-section max-w-2xl mx-auto px-6 transform transition-all duration-300 opacity-0 translate-y-4">
+             <!-- Populated by JS -->
+        </section>
+
+        <!-- Admin Dashboard View -->
+        <section id="view-admin" class="hidden view-section max-w-6xl mx-auto px-6 transform transition-all duration-300 opacity-0 translate-y-4">
+             <!-- Populated by JS -->
+        </section>
+        
+        <!-- Content Page View (Dynamic) -->
+        <section id="view-page" class="hidden view-section max-w-4xl mx-auto px-6 transform transition-all duration-300 opacity-0 translate-y-4">
+             <!-- Populated by JS -->
+        </section>
+
+    </main>
+
+    <!-- Application Logic (ES Modules) -->
+    <!-- Type module enables top level await and import/export -->
+    <script type="module" src="./assets/js/app.js"></script>
+
+</body>
+</html>
