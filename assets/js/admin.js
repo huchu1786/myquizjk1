@@ -153,36 +153,89 @@ function renderUsersTab(container) {
 function renderCategoriesTab(container) {
     container.innerHTML = `
         <div class="flex justify-between items-center mb-8">
-            <h2 class="text-2xl font-black text-stone-900 tracking-tight">Category Folders</h2>
+            <div>
+                <h2 class="text-2xl font-black text-stone-900 tracking-tight">Category Folders</h2>
+                <p class="text-stone-500 text-sm font-medium mt-1">${adminState.categories.length} folder${adminState.categories.length !== 1 ? 's' : ''} &bull; Lock folders to charge users ₹50 for access</p>
+            </div>
         </div>
         
-        <div class="flex flex-col gap-4 mb-8 p-4 bg-stone-50 border border-stone-200 rounded-2xl">
-            <div class="flex gap-4">
-                <input type="text" id="new-category-name" placeholder="New category name..." class="flex-1 p-4 bg-white border border-stone-200 rounded-2xl focus:border-stone-400 outline-none transition-all font-medium">
-                <button onclick="window.adminAddCategory()" class="px-8 py-4 bg-stone-900 text-white rounded-2xl font-bold hover:bg-stone-800 transition-colors shrink-0">Add Custom Folder</button>
+        <!-- Add Folder Form -->
+        <div class="flex flex-col gap-4 mb-8 p-5 bg-stone-50 border border-stone-200 rounded-2xl">
+            <div class="flex gap-3">
+                <input type="text" id="new-category-name" placeholder="New folder name..." 
+                    class="flex-1 p-4 bg-white border border-stone-200 rounded-2xl focus:border-stone-900 focus:ring-2 focus:ring-stone-900/10 outline-none transition-all font-medium text-stone-800 placeholder:text-stone-400"
+                    onkeydown="if(event.key==='Enter')window.adminAddCategory()">
+                <button onclick="window.adminAddCategory()" 
+                    class="px-7 py-4 bg-stone-900 text-white rounded-2xl font-bold hover:bg-stone-700 active:scale-95 transition-all shrink-0 flex items-center gap-2">
+                    <i data-lucide="folder-plus" class="w-4 h-4"></i> Add Folder
+                </button>
             </div>
-            <div class="flex items-center gap-3 px-2">
-                <input type="checkbox" id="new-category-premium" class="w-5 h-5 accent-stone-900 cursor-pointer">
-                <label for="new-category-premium" class="font-bold text-stone-700 cursor-pointer">Lock this folder for ₹50</label>
-            </div>
+            <label class="flex items-center gap-3 px-2 cursor-pointer select-none group">
+                <div class="relative">
+                    <input type="checkbox" id="new-category-premium" class="sr-only peer">
+                    <div class="w-10 h-6 bg-stone-200 peer-checked:bg-yellow-500 rounded-full transition-colors duration-200"></div>
+                    <div class="absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform duration-200 peer-checked:translate-x-4"></div>
+                </div>
+                <span class="font-bold text-stone-600 group-hover:text-stone-900 transition-colors flex items-center gap-2">
+                    <i data-lucide="lock" class="w-4 h-4 text-yellow-500"></i>
+                    Lock this folder (₹50 to unlock)
+                </span>
+            </label>
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            ${adminState.categories.map(c => `
-                <div class="p-4 bg-white border-2 ${c.isPremium ? 'border-yellow-200 bg-yellow-50' : 'border-stone-200'} rounded-2xl flex items-center justify-between group shadow-sm transition-colors">
-                    <div class="flex items-center gap-3">
-                        <i data-lucide="${c.isPremium ? 'lock' : 'folder'}" class="w-5 h-5 ${c.isPremium ? 'text-yellow-500' : 'text-stone-400'}"></i>
-                        <span class="font-bold text-stone-700">${escapeHTML(c.name)}</span>
-                        ${c.isPremium ? `<span class="px-2 py-1 bg-yellow-100 text-yellow-800 text-[10px] font-black uppercase tracking-widest rounded-lg">₹${c.price || 50}</span>` : '<span class="px-2 py-1 bg-stone-100 text-stone-500 text-[10px] font-black uppercase tracking-widest rounded-lg">Free</span>'}
+        <!-- Category Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4" id="categories-grid">
+            ${adminState.categories.length === 0 ? `
+                <div class="col-span-2 py-16 text-center border-2 border-dashed border-stone-200 rounded-2xl">
+                    <i data-lucide="folder-open" class="w-12 h-12 text-stone-300 mx-auto mb-3"></i>
+                    <p class="text-stone-400 font-bold">No folders yet</p>
+                    <p class="text-stone-400 text-sm">Add your first category folder above</p>
+                </div>
+            ` : adminState.categories.map(c => `
+                <div id="cat-card-${c.id}" 
+                    class="cat-card group relative p-5 rounded-2xl border-2 flex items-center justify-between transition-all duration-300 
+                        ${c.isPremium 
+                            ? 'border-yellow-300 bg-gradient-to-br from-yellow-50 to-amber-50 shadow-yellow-100 shadow-md' 
+                            : 'border-stone-200 bg-white shadow-sm hover:shadow-md hover:border-stone-300'}">
+                    
+                    <!-- Lock status indicator strip -->
+                    <div class="absolute left-0 top-4 bottom-4 w-1 rounded-r-full transition-all duration-300 
+                        ${c.isPremium ? 'bg-yellow-400' : 'bg-stone-200 group-hover:bg-stone-400'}"></div>
+
+                    <div class="flex items-center gap-3 pl-3 overflow-hidden">
+                        <!-- Folder icon -->
+                        <div class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 transition-all duration-300
+                            ${c.isPremium ? 'bg-yellow-100' : 'bg-stone-100 group-hover:bg-stone-200'}">
+                            <i data-lucide="${c.isPremium ? 'lock' : 'folder'}" 
+                               class="w-5 h-5 transition-colors ${c.isPremium ? 'text-yellow-600' : 'text-stone-500'}"></i>
+                        </div>
+                        <div class="overflow-hidden">
+                            <p class="font-bold text-stone-900 truncate">${escapeHTML(c.name)}</p>
+                            <span class="inline-flex items-center gap-1 mt-0.5 px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-widest 
+                                ${c.isPremium ? 'bg-yellow-200 text-yellow-900' : 'bg-stone-100 text-stone-500'}">
+                                ${c.isPremium ? `₹${c.price || 50} Premium` : 'Free Access'}
+                            </span>
+                        </div>
                     </div>
-                    <div class="flex items-center gap-1">
-                        <button onclick="window.adminToggleCategoryLock('${c.id}', ${!!c.isPremium})" 
-                            class="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all ${c.isPremium ? 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200' : 'bg-stone-100 text-stone-600 hover:bg-stone-200'}" 
-                            title="${c.isPremium ? 'Click to make this folder free' : 'Click to lock this folder for ₹50'}">
+
+                    <div class="flex items-center gap-2 shrink-0">
+                        <!-- Lock/Unlock Toggle -->
+                        <button id="lock-btn-${c.id}"
+                            onclick="window.adminToggleCategoryLock('${c.id}', ${!!c.isPremium})" 
+                            aria-label="${c.isPremium ? 'Unlock folder' : 'Lock folder for ₹50'}"
+                            aria-pressed="${!!c.isPremium}"
+                            class="lock-toggle-btn flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-black 
+                                   transition-all duration-200 active:scale-95
+                                   ${c.isPremium 
+                                       ? 'bg-yellow-400 text-yellow-900 hover:bg-yellow-300 shadow-sm shadow-yellow-200' 
+                                       : 'bg-stone-100 text-stone-600 hover:bg-stone-900 hover:text-white'}">
                             <i data-lucide="${c.isPremium ? 'lock-open' : 'lock'}" class="w-3.5 h-3.5"></i>
-                            ${c.isPremium ? 'Unlock' : 'Lock'}
+                            <span class="lock-btn-text">${c.isPremium ? 'Unlock' : 'Lock'}</span>
                         </button>
-                        <button onclick="window.adminDeleteCategory('${c.id}')" class="text-stone-300 hover:text-red-500 transition-colors p-2">
+                        <!-- Delete -->
+                        <button onclick="window.adminDeleteCategory('${c.id}')" 
+                            aria-label="Delete folder"
+                            class="p-2 rounded-xl text-stone-300 hover:text-red-500 hover:bg-red-50 transition-all duration-200 active:scale-95">
                             <i data-lucide="trash-2" class="w-4 h-4"></i>
                         </button>
                     </div>
@@ -300,17 +353,54 @@ window.adminDeleteCategory = async (id) => {
 }
 
 window.adminToggleCategoryLock = async (id, currentlyLocked) => {
+    const btn = document.getElementById(`lock-btn-${id}`);
+    const card = document.getElementById(`cat-card-${id}`);
+    if (!btn) return;
+
+    // --- Optimistic UI: show spinner ---
+    const originalHTML = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = `<i data-lucide="loader-2" class="w-3.5 h-3.5 animate-spin"></i><span>Saving...</span>`;
+    if(window.lucide) lucide.createIcons();
+
     try {
         if (currentlyLocked) {
-            // Unlock: remove premium flag
             await updateDocument('categories', id, { isPremium: false, price: 0 });
         } else {
-            // Lock: set premium
             await updateDocument('categories', id, { isPremium: true, price: 50 });
         }
+        // Success feedback — Firestore snapshot listener will re-render the card automatically
+        btn.innerHTML = `<i data-lucide="check" class="w-3.5 h-3.5"></i><span>Saved!</span>`;
+        btn.classList.add('bg-green-500', 'text-white');
+        if(window.lucide) lucide.createIcons();
+        // Let snapshot listener handle the full re-render (no need to re-render manually)
     } catch(e) {
-        console.error(e);
-        alert('Error updating folder lock status: ' + e.message);
+        console.error('Lock toggle failed:', e);
+        // --- Rollback UI ---
+        btn.innerHTML = originalHTML;
+        btn.disabled = false;
+        if(window.lucide) lucide.createIcons();
+
+        // Show user-friendly error
+        const isPermission = e?.code === 'permission-denied' || e?.message?.includes('permission');
+        const msg = isPermission
+            ? '⛔ Permission denied. Make sure you are logged in as an admin and your Firestore rules are deployed.'
+            : `❌ Failed to update: ${e.message}`;
+
+        // Flash error on the card
+        if (card) {
+            card.classList.add('border-red-300', 'bg-red-50');
+            const errBadge = document.createElement('div');
+            errBadge.className = 'absolute top-2 right-2 px-2 py-1 bg-red-600 text-white text-[10px] font-black rounded-lg z-10 animate-bounce';
+            errBadge.textContent = 'Error!';
+            card.appendChild(errBadge);
+            setTimeout(() => {
+                card.classList.remove('border-red-300', 'bg-red-50');
+                errBadge.remove();
+            }, 3000);
+        }
+
+        import('./ui.js').then(m => m.showToast(msg, 'error'));
     }
 }
 
