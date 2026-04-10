@@ -156,17 +156,24 @@ function renderCategoriesTab(container) {
             <h2 class="text-2xl font-black text-stone-900 tracking-tight">Category Folders</h2>
         </div>
         
-        <div class="flex gap-4 mb-8">
-            <input type="text" id="new-category-name" placeholder="New category name..." class="flex-1 p-4 bg-stone-50 border border-stone-200 rounded-2xl focus:border-stone-400 outline-none transition-all font-medium">
-            <button onclick="window.adminAddCategory()" class="px-8 py-4 bg-stone-900 text-white rounded-2xl font-bold hover:bg-stone-800 transition-colors shrink-0">Add Custom Folder</button>
+        <div class="flex flex-col gap-4 mb-8 p-4 bg-stone-50 border border-stone-200 rounded-2xl">
+            <div class="flex gap-4">
+                <input type="text" id="new-category-name" placeholder="New category name..." class="flex-1 p-4 bg-white border border-stone-200 rounded-2xl focus:border-stone-400 outline-none transition-all font-medium">
+                <button onclick="window.adminAddCategory()" class="px-8 py-4 bg-stone-900 text-white rounded-2xl font-bold hover:bg-stone-800 transition-colors shrink-0">Add Custom Folder</button>
+            </div>
+            <div class="flex items-center gap-3 px-2">
+                <input type="checkbox" id="new-category-premium" class="w-5 h-5 accent-stone-900 cursor-pointer">
+                <label for="new-category-premium" class="font-bold text-stone-700 cursor-pointer">Lock this folder for ₹50</label>
+            </div>
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             ${adminState.categories.map(c => `
                 <div class="p-4 bg-white border border-stone-200 rounded-2xl flex items-center justify-between group shadow-sm">
                     <div class="flex items-center gap-3">
-                        <i data-lucide="folder" class="w-5 h-5 text-stone-400"></i>
+                        <i data-lucide="${c.isPremium ? 'lock' : 'folder'}" class="w-5 h-5 ${c.isPremium ? 'text-yellow-500' : 'text-stone-400'}"></i>
                         <span class="font-bold text-stone-700">${escapeHTML(c.name)}</span>
+                        ${c.isPremium ? `<span class="px-2 py-1 bg-yellow-100 text-yellow-800 text-[10px] font-black uppercase tracking-widest rounded-lg">₹${c.price || 50}</span>` : ''}
                     </div>
                     <button onclick="window.adminDeleteCategory('${c.id}')" class="text-stone-300 hover:text-red-500 transition-colors p-2">
                         <i data-lucide="trash-2" class="w-4 h-4"></i>
@@ -260,11 +267,18 @@ window.adminChangeRole = async (userId, newRole) => {
 
 window.adminAddCategory = async () => {
     const input = document.getElementById('new-category-name');
+    const isPremiumInput = document.getElementById('new-category-premium');
     const val = input.value.trim();
     if(!val) return;
     try {
-        await addDocument('categories', { name: val, createdAt: new Date() });
+        const data = { name: val, createdAt: new Date() };
+        if (isPremiumInput && isPremiumInput.checked) {
+            data.isPremium = true;
+            data.price = 50;
+        }
+        await addDocument('categories', data);
         input.value = '';
+        if(isPremiumInput) isPremiumInput.checked = false;
     } catch(e) {
         console.error(e);
         alert('Error adding category');

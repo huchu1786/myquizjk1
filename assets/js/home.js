@@ -117,7 +117,9 @@ function fetchData(appState) {
 }
 
 function renderContent() {
-    const isAdmin = window.app.state.profile?.role === 'admin';
+    const appState = window.app.state;
+    const isAdmin = appState.profile?.role === 'admin';
+    const unlockedCategories = appState.profile?.unlockedCategories || [];
     const contentGrid = document.getElementById('home-content-grid');
     const announcementsContainer = document.getElementById('announcements-container');
     const filtersContainer = document.getElementById('filters-container');
@@ -185,6 +187,35 @@ function renderContent() {
         } else {
             topicsHTML = topicsToShow.map(cat => {
                 const count = localQuizzes.filter(q => q.category === cat).length;
+                const catData = localCategories.find(c => c.name === cat);
+                const isPremium = catData?.isPremium === true;
+                const isUnlocked = !isPremium || isAdmin || unlockedCategories.includes(catData?.id);
+                const price = catData?.price || 50;
+
+                if (!isUnlocked) {
+                    // LOCKED CARD
+                    return `
+                        <div onclick="window.quizMasterSelectCategory('${escapeHTML(cat)}')" class="bg-white p-8 rounded-3xl border-2 border-yellow-200 shadow-sm hover:shadow-xl hover:border-yellow-400 transition-all cursor-pointer group relative overflow-hidden transform hover:-translate-y-1 hover:scale-[1.02]">
+                            <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+                                <i data-lucide="lock" class="w-20 h-20 text-yellow-500"></i>
+                            </div>
+                            <div class="w-14 h-14 bg-yellow-100 rounded-2xl flex items-center justify-center mb-6 group-hover:bg-yellow-200 transition-colors">
+                                <i data-lucide="lock" class="w-7 h-7 text-yellow-600"></i>
+                            </div>
+                            <div class="flex items-center gap-3 mb-2">
+                                <h3 class="text-2xl font-black text-stone-900 tracking-tight capitalize">${escapeHTML(cat)}</h3>
+                                <span class="px-2 py-1 bg-yellow-100 text-yellow-800 text-[10px] font-black uppercase tracking-widest rounded-lg">₹${price}</span>
+                            </div>
+                            <p class="text-stone-500 font-medium">${count} ${count === 1 ? 'Quiz' : 'Quizzes'}</p>
+                            <div class="mt-6 flex items-center gap-2 text-yellow-700 font-bold text-sm">
+                                Pay ₹${price} to Unlock <i data-lucide="chevron-right" class="w-4 h-4"></i>
+                            </div>
+                        </div>
+                    `;
+                }
+
+                // UNLOCKED CARD
+                const isJustUnlocked = isPremium && isUnlocked && !isAdmin;
                 return `
                     <div onclick="window.quizMasterSelectCategory('${escapeHTML(cat)}')" class="bg-white p-8 rounded-3xl border border-stone-200 shadow-sm hover:shadow-xl hover:border-stone-300 transition-all cursor-pointer group relative overflow-hidden transform hover:-translate-y-1 hover:scale-[1.02]">
                         <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
@@ -193,7 +224,10 @@ function renderContent() {
                         <div class="w-14 h-14 bg-stone-100 rounded-2xl flex items-center justify-center mb-6 group-hover:bg-stone-900 group-hover:text-white transition-colors">
                             <i data-lucide="folder" class="w-7 h-7"></i>
                         </div>
-                        <h3 class="text-2xl font-black text-stone-900 mb-2 tracking-tight capitalize">${escapeHTML(cat)}</h3>
+                        <div class="flex items-center gap-3 mb-2">
+                            <h3 class="text-2xl font-black text-stone-900 tracking-tight capitalize">${escapeHTML(cat)}</h3>
+                            ${isJustUnlocked ? '<span class="px-2 py-1 bg-green-100 text-green-700 text-[10px] font-black uppercase tracking-widest rounded-lg">Unlocked</span>' : ''}
+                        </div>
                         <p class="text-stone-500 font-medium">${count} ${count === 1 ? 'Quiz' : 'Quizzes'}</p>
                         <div class="mt-6 flex items-center gap-2 text-stone-900 font-bold text-sm">
                             Open Folder <i data-lucide="chevron-right" class="w-4 h-4"></i>
@@ -322,6 +356,25 @@ function renderContent() {
 
 // Attach globals for inline event handlers
 window.quizMasterSelectCategory = (cat, forceViewReset = false) => {
+    // Check if this category is locked for the user
+    const appState = window.app.state;
+    const isAdmin = appState.profile?.role === 'admin';
+    const unlockedCategories = appState.profile?.unlockedCategories || [];
+    const catData = localCategories.find(c => c.name === cat);
+    const isPremium = catData?.isPremium === true;
+    const isUnlocked = !isPremium || isAdmin || unlockedCategories.includes(catData?.id);
+
+    if (!isUnlocked && catData) {
+        // Show payment modal
+        import('./ui-modals.js').then(m => m.openPaymentModal(catData, appState.user.uid, () => {
+            // After payment success, open the folder
+            viewState.selectedCategory = cat;
+            viewState.currentPage = 1;
+            renderContent();
+        }));
+        return;
+    }
+
     viewState.selectedCategory = cat;
     if (forceViewReset && cat === 'All') {
         viewState.viewMode = 'topics';
