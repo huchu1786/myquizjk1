@@ -103,18 +103,46 @@ function fetchAdminData() {
     // Fetch Payment Requests (real-time)
     const pQ = query(collection(db, 'payment_requests'), orderBy('createdAt', 'desc'));
     unsubscribers.push(onSnapshot(pQ, snap => {
-        adminState.payments = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        adminState.payments = snap.docs.map(d => ({ id: d.id, ...d.data() }));
         if (adminState.activeTab === 'payments') renderActiveTab();
-        // Update sidebar badge
-        renderAdminDisplay(document.getElementById('view-admin'), window.app.state);
+        // Only patch the sidebar badge — do NOT call renderAdminDisplay (causes infinite loop)
+        updatePaymentBadge();
     }));
+}
+
+// Update only the payment badge in the sidebar without full re-render
+function updatePaymentBadge() {
+    const pending = adminState.payments.filter(p => p.status === 'pending').length;
+    const paymentsBtn = document.querySelector('[onclick="window.adminSetTab(\'payments\')"]');
+    if (!paymentsBtn) return;
+    // Remove existing badge if any
+    paymentsBtn.querySelector('.payment-badge-count')?.remove();
+    if (pending > 0) {
+        const badge = document.createElement('span');
+        badge.className = 'payment-badge-count px-2 py-0.5 bg-red-500 text-white text-xs font-black rounded-full';
+        badge.textContent = pending;
+        paymentsBtn.appendChild(badge);
+    }
 }
 
 // Global expose
 window.adminSetTab = (tab) => {
     adminState.activeTab = tab;
-    // Re-render full view to update sidebar highlight
-    renderAdminDisplay(document.getElementById('view-admin'), window.app.state);
+    // Just update sidebar highlight classes + render the tab content (no full re-render)
+    document.querySelectorAll('[onclick^="window.adminSetTab"]').forEach(btn => {
+        const btnTab = btn.getAttribute('onclick').match(/'(\w+)'/)?.[1];
+        const isActive = btnTab === tab;
+        btn.className = btn.className
+            .replace(/bg-stone-900 text-white shadow-lg|bg-white text-stone-500 hover:bg-stone-50 hover:text-stone-900/g, '')
+            .trim() + ' ' + (isActive
+                ? 'bg-stone-900 text-white shadow-lg'
+                : 'bg-white text-stone-500 hover:bg-stone-50 hover:text-stone-900');
+        const icon = btn.querySelector('i[data-lucide]');
+        if (icon) {
+            icon.className = `w-5 h-5 ${isActive ? 'text-white' : 'text-stone-400 group-hover:text-stone-900'}`;
+        }
+    });
+    renderActiveTab();
 };
 
 function renderActiveTab() {
