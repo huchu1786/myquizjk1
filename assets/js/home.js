@@ -93,11 +93,11 @@ function updateModeToggles() {
     if (viewState.viewMode === 'topics' && viewState.selectedCategory === 'All') {
         btnTopics.setAttribute('style', btnTopics.getAttribute('style').replace(/background:[^;]+;color:[^;]+;box-shadow:[^;]+;/, '') + activeStyle);
         btnGrid.setAttribute('style',   btnGrid.getAttribute('style').replace(/background:[^;]+;color:[^;]+;box-shadow:[^;]+;/, '')   + inactiveStyle);
-        if (title) title.textContent = '\u{1F4C1} All Topics';
+        if (title) title.textContent = '📁 All Topics';
     } else {
         btnGrid.setAttribute('style',   btnGrid.getAttribute('style').replace(/background:[^;]+;color:[^;]+;box-shadow:[^;]+;/, '')   + activeStyle);
         btnTopics.setAttribute('style', btnTopics.getAttribute('style').replace(/background:[^;]+;color:[^;]+;box-shadow:[^;]+;/, '') + inactiveStyle);
-        if (title) title.textContent = viewState.selectedCategory !== 'All' ? `\u{1F4C2} ${viewState.selectedCategory}` : '\u{1F4D6} All Quizzes';
+        if (title) title.textContent = viewState.selectedCategory !== 'All' ? `📂 ${viewState.selectedCategory}` : '📖 All Quizzes';
     }
 }
 
@@ -188,13 +188,14 @@ function renderContent() {
 
         // Color palette for topic cards (cycles)
         const CARD_PALETTES = [
-            { bg: 'linear-gradient(135deg,#6366f1,#8b5cf6)', emoji: '\u26A1', light: 'rgba(99,102,241,0.1)' },
-            { bg: 'linear-gradient(135deg,#ec4899,#f43f5e)', emoji: '\u{1F525}', light: 'rgba(236,72,153,0.1)' },
-            { bg: 'linear-gradient(135deg,#06b6d4,#6366f1)', emoji: '\u{1F30A}', light: 'rgba(6,182,212,0.1)' },
-            { bg: 'linear-gradient(135deg,#10b981,#06b6d4)', emoji: '\u{1F33F}', light: 'rgba(16,185,129,0.1)' },
-            { bg: 'linear-gradient(135deg,#f59e0b,#ef4444)', emoji: '\u{1F31F}', light: 'rgba(245,158,11,0.1)' },
-            { bg: 'linear-gradient(135deg,#8b5cf6,#ec4899)', emoji: '\u{1F3A8}', light: 'rgba(139,92,246,0.1)' },
+            { bg: 'linear-gradient(135deg,#6366f1,#8b5cf6)', emoji: '⚡', light: 'rgba(99,102,241,0.1)' },
+            { bg: 'linear-gradient(135deg,#ec4899,#f43f5e)', emoji: '🔥', light: 'rgba(236,72,153,0.1)' },
+            { bg: 'linear-gradient(135deg,#06b6d4,#6366f1)', emoji: '🌊', light: 'rgba(6,182,212,0.1)' },
+            { bg: 'linear-gradient(135deg,#10b981,#06b6d4)', emoji: '🌿', light: 'rgba(16,185,129,0.1)' },
+            { bg: 'linear-gradient(135deg,#f59e0b,#ef4444)', emoji: '🌟', light: 'rgba(245,158,11,0.1)' },
+            { bg: 'linear-gradient(135deg,#8b5cf6,#ec4899)', emoji: '🎨', light: 'rgba(139,92,246,0.1)' },
         ];
+
 
         // Render Topics
         contentGrid.className = 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6';
