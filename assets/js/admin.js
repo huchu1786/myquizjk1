@@ -1,12 +1,13 @@
 import { escapeHTML } from './ui.js';
-import { db, collection, query, orderBy, onSnapshot, updateDocument, addDocument, removeDocument } from './firebase-config.js';
+import { db, collection, doc, getDoc, query, orderBy, onSnapshot, updateDocument, addDocument, removeDocument } from './firebase-config.js';
 
 let adminState = {
     activeTab: 'quizzes',
     users: [],
     categories: [],
     quizzes: [],
-    content: []
+    content: [],
+    payments: []
 };
 
 let unsubscribers = [];
@@ -32,12 +33,15 @@ export function renderAdminDisplay(container, appState) {
         <div class="flex flex-col md:flex-row gap-8">
             <!-- Sidebar Navigation -->
             <div class="w-full md:w-64 space-y-2">
-                ${['quizzes', 'categories', 'content', 'users'].map(tab => `
+                ${['quizzes', 'categories', 'content', 'users', 'payments'].map(tab => {
+                    const pendingCount = tab === 'payments' ? adminState.payments.filter(p => p.status === 'pending').length : 0;
+                    return `
                     <button onclick="window.adminSetTab('${tab}')" class="w-full flex items-center gap-3 px-6 py-4 rounded-2xl font-bold transition-all text-left group ${adminState.activeTab === tab ? 'bg-stone-900 text-white shadow-lg' : 'bg-white text-stone-500 hover:bg-stone-50 hover:text-stone-900'}">
                         <i data-lucide="${getTabIcon(tab)}" class="w-5 h-5 ${adminState.activeTab === tab ? 'text-white' : 'text-stone-400 group-hover:text-stone-900'}"></i>
-                        <span class="capitalize">${tab}</span>
-                    </button>
-                `).join('')}
+                        <span class="capitalize flex-1">${tab}</span>
+                        ${pendingCount > 0 ? `<span class="px-2 py-0.5 bg-red-500 text-white text-xs font-black rounded-full">${pendingCount}</span>` : ''}
+                    </button>`;
+                }).join('')}
             </div>
 
             <!-- Content Area -->
@@ -56,10 +60,11 @@ export function renderAdminDisplay(container, appState) {
 }
 
 function getTabIcon(tab) {
-    if (tab === 'quizzes') return 'book-open';
+    if (tab === 'quizzes')    return 'book-open';
     if (tab === 'categories') return 'folder';
-    if (tab === 'content') return 'file-text';
-    if (tab === 'users') return 'users';
+    if (tab === 'content')    return 'file-text';
+    if (tab === 'users')      return 'users';
+    if (tab === 'payments')   return 'credit-card';
     return 'circle';
 }
 
@@ -94,6 +99,15 @@ function fetchAdminData() {
         adminState.quizzes = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         if (adminState.activeTab === 'quizzes') renderActiveTab();
     }));
+
+    // Fetch Payment Requests (real-time)
+    const pQ = query(collection(db, 'payment_requests'), orderBy('createdAt', 'desc'));
+    unsubscribers.push(onSnapshot(pQ, snap => {
+        adminState.payments = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        if (adminState.activeTab === 'payments') renderActiveTab();
+        // Update sidebar badge
+        renderAdminDisplay(document.getElementById('view-admin'), window.app.state);
+    }));
 }
 
 // Global expose
@@ -107,10 +121,11 @@ function renderActiveTab() {
     const contentArea = document.getElementById('admin-content-area');
     if (!contentArea) return;
 
-    if (adminState.activeTab === 'users') renderUsersTab(contentArea);
+    if (adminState.activeTab === 'users')      renderUsersTab(contentArea);
     else if (adminState.activeTab === 'categories') renderCategoriesTab(contentArea);
-    else if (adminState.activeTab === 'content') renderContentTab(contentArea);
-    else if (adminState.activeTab === 'quizzes') renderQuizzesTab(contentArea);
+    else if (adminState.activeTab === 'content')    renderContentTab(contentArea);
+    else if (adminState.activeTab === 'quizzes')    renderQuizzesTab(contentArea);
+    else if (adminState.activeTab === 'payments')   renderPaymentsTab(contentArea);
     
     if(window.lucide) lucide.createIcons();
 }
@@ -427,3 +442,132 @@ window.adminDeleteContent = async (id) => {
         await removeDocument('content', id);
     }
 }
+
+// ─── PAYMENTS TAB ─────────────────────────────────────────────────────────────
+
+function renderPaymentsTab(container) {
+    const pending   = adminState.payments.filter(p => p.status === 'pending');
+    const approved  = adminState.payments.filter(p => p.status === 'approved');
+    const rejected  = adminState.payments.filter(p => p.status === 'rejected');
+
+    const paymentCard = (p) => {
+        const date = p.createdAt?.toDate?.() ? p.createdAt.toDate().toLocaleDateString('en-IN', { day:'numeric', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' }) : 'N/A';
+        const statusColor = p.status === 'pending' ? 'bg-amber-100 text-amber-800' : p.status === 'approved' ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-800';
+        return `
+            <div class="p-5 bg-white border-2 ${p.status === 'pending' ? 'border-amber-200' : p.status === 'approved' ? 'border-emerald-200' : 'border-red-100'} rounded-2xl flex flex-col gap-3 shadow-sm">
+                <div class="flex items-start justify-between gap-3">
+                    <div class="overflow-hidden">
+                        <p class="font-black text-stone-900 text-base truncate">${escapeHTML(p.categoryName || 'Unknown Folder')}</p>
+                        <p class="text-stone-500 text-sm truncate">${escapeHTML(p.userEmail || p.userId || '')}</p>
+                        <p class="text-stone-400 text-xs mt-0.5">${date}</p>
+                    </div>
+                    <span class="shrink-0 px-3 py-1 rounded-full text-xs font-black uppercase tracking-wide ${statusColor}">${p.status}</span>
+                </div>
+                <div class="flex items-center justify-between gap-3 bg-stone-50 rounded-xl p-3">
+                    <div>
+                        <p class="text-xs text-stone-500 font-bold uppercase tracking-widest mb-0.5">UTR Reference</p>
+                        <p class="font-mono font-bold text-stone-800 text-sm">${escapeHTML(p.utr || '—')}</p>
+                    </div>
+                    <div class="text-right">
+                        <p class="text-xs text-stone-500 font-bold uppercase tracking-widest mb-0.5">Amount</p>
+                        <p class="font-black text-indigo-600 text-lg">\u20b9${p.amount || 50}</p>
+                    </div>
+                </div>
+                ${p.status === 'pending' ? `
+                <div class="flex gap-2">
+                    <button onclick="window.adminRejectPayment('${p.id}')"
+                        class="flex-1 py-2.5 rounded-xl font-bold text-red-600 bg-red-50 hover:bg-red-100 transition-all text-sm flex items-center justify-center gap-2">
+                        <i data-lucide="x-circle" class="w-4 h-4"></i> Reject
+                    </button>
+                    <button onclick="window.adminApprovePayment('${p.id}', '${p.userId}', '${p.categoryId}')"
+                        class="flex-2 flex-1 py-2.5 rounded-xl font-black text-white transition-all text-sm flex items-center justify-center gap-2"
+                        style="background:linear-gradient(135deg,#10b981,#06b6d4); flex:2;">
+                        <i data-lucide="check-circle" class="w-4 h-4"></i> Approve & Unlock
+                    </button>
+                </div>` : ''}
+            </div>
+        `;
+    };
+
+    container.innerHTML = `
+        <div class="flex justify-between items-center mb-8">
+            <div>
+                <h2 class="text-2xl font-black text-stone-900 tracking-tight">Payment Requests</h2>
+                <p class="text-stone-500 text-sm font-medium mt-1">
+                    <span class="text-amber-600 font-bold">${pending.length} pending</span> &bull;
+                    ${approved.length} approved &bull; ${rejected.length} rejected
+                </p>
+            </div>
+            <div class="px-4 py-2 rounded-full text-sm font-bold" style="background:linear-gradient(135deg,rgba(245,158,11,0.12),rgba(16,185,129,0.1)); color:#92400e;">
+                UPI: rmzshah-2@okicici
+            </div>
+        </div>
+
+        ${adminState.payments.length === 0 ? `
+            <div class="py-20 text-center border-2 border-dashed border-stone-200 rounded-2xl">
+                <i data-lucide="credit-card" class="w-12 h-12 text-stone-300 mx-auto mb-3"></i>
+                <p class="text-stone-400 font-bold">No payment requests yet</p>
+                <p class="text-stone-400 text-sm">Requests will appear here when users pay to unlock folders</p>
+            </div>
+        ` : ''}
+
+        ${pending.length > 0 ? `
+        <div class="mb-8">
+            <h3 class="text-sm font-black text-amber-700 uppercase tracking-widest mb-4 flex items-center gap-2">
+                <i data-lucide="clock" class="w-4 h-4"></i> Pending Approval (${pending.length})
+            </h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">${pending.map(paymentCard).join('')}</div>
+        </div>` : ''}
+
+        ${approved.length > 0 ? `
+        <div class="mb-8">
+            <h3 class="text-sm font-black text-emerald-700 uppercase tracking-widest mb-4 flex items-center gap-2">
+                <i data-lucide="check-circle" class="w-4 h-4"></i> Approved (${approved.length})
+            </h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">${approved.map(paymentCard).join('')}</div>
+        </div>` : ''}
+
+        ${rejected.length > 0 ? `
+        <div>
+            <h3 class="text-sm font-black text-red-600 uppercase tracking-widest mb-4 flex items-center gap-2">
+                <i data-lucide="x-circle" class="w-4 h-4"></i> Rejected (${rejected.length})
+            </h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">${rejected.map(paymentCard).join('')}</div>
+        </div>` : ''}
+    `;
+}
+
+window.adminApprovePayment = async (requestId, userId, categoryId) => {
+    if (!confirm('Verify the UTR in your UPI app first, then click OK to unlock this folder for the user.')) return;
+    try {
+        // 1. Unlock the folder in the user's profile
+        const userSnap = await getDoc(doc(db, 'users', userId));
+        const currentUnlocked = userSnap.data()?.unlockedCategories || [];
+        if (!currentUnlocked.includes(categoryId)) {
+            await updateDocument('users', userId, {
+                unlockedCategories: [...currentUnlocked, categoryId]
+            });
+        }
+        // 2. Mark request as approved
+        await updateDocument('payment_requests', requestId, {
+            status: 'approved',
+            approvedAt: new Date(),
+            approvedBy: window.app?.state?.user?.email || 'admin'
+        });
+        import('./ui.js').then(m => m.showToast('✅ Payment approved! Folder unlocked for the user.', 'success'));
+    } catch(e) {
+        console.error(e);
+        import('./ui.js').then(m => m.showToast('❌ Error approving: ' + e.message, 'error'));
+    }
+};
+
+window.adminRejectPayment = async (requestId) => {
+    if (!confirm('Reject this payment request? The user will NOT get access.')) return;
+    try {
+        await updateDocument('payment_requests', requestId, { status: 'rejected' });
+        import('./ui.js').then(m => m.showToast('Request rejected.', 'success'));
+    } catch(e) {
+        console.error(e);
+        import('./ui.js').then(m => m.showToast('❌ Error: ' + e.message, 'error'));
+    }
+};

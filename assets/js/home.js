@@ -366,14 +366,20 @@ window.quizMasterSelectCategory = (cat, forceViewReset = false) => {
 
     if (!isUnlocked && catData) {
         // Show payment modal
-        import('./ui-modals.js').then(m => m.openPaymentModal(catData, appState.user.uid, () => {
-            // After payment success, open the folder
-            viewState.selectedCategory = cat;
-            viewState.currentPage = 1;
-            renderContent();
-        }));
+        import('./ui-modals.js').then(m => m.openPaymentModal(
+            catData,
+            appState.user.uid,
+            appState.user.email || '',
+            (result) => {
+                if (result === 'pending') {
+                    // Payment submitted, waiting for admin approval
+                    import('./ui.js').then(ui => ui.showToast('Payment request submitted! Your folder will unlock once admin approves.', 'success'));
+                }
+            }
+        ));
         return;
     }
+
 
     viewState.selectedCategory = cat;
     if (forceViewReset && cat === 'All') {

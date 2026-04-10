@@ -1,5 +1,5 @@
 import { escapeHTML } from './ui.js';
-import { db, removeDocument, query, collection, where, getDocs, writeBatch, doc, updateDoc } from './firebase-config.js';
+import { db, removeDocument, query, collection, where, getDocs, writeBatch, doc, updateDoc, addDoc } from './firebase-config.js';
 import { showToast } from './ui.js';
 
 export function openShareModal(quiz) {
@@ -94,187 +94,210 @@ export function openShareModal(quiz) {
     });
 }
 
-export function openPaymentModal(category, userId, onSuccess) {
+export function openPaymentModal(category, userId, userEmail, onSuccess) {
     const container = document.getElementById('confirm-modal-container');
     if (!container) return;
 
     const price = category.price || 50;
+    const upiId = 'rmzshah-2@okicici';
+    // UPI deep link for QR code generation
+    const upiDeepLink = `upi://pay?pa=${encodeURIComponent(upiId)}&pn=QuizMaster&am=${price}&cu=INR&tn=${encodeURIComponent('Unlock ' + category.name)}`;
+    // Use a public QR generator API
+    const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(upiDeepLink)}`;
 
     container.innerHTML = `
-        <div class="bg-white rounded-3xl w-full max-w-md shadow-2xl transform transition-all scale-95 opacity-0 overflow-hidden" id="payment-modal-content">
-            <!-- Header -->
-            <div class="bg-stone-900 px-8 py-6 flex items-center justify-between">
-                <div>
-                    <p class="text-stone-400 text-xs font-bold uppercase tracking-widest mb-1">Unlock Folder</p>
-                    <h2 class="text-white text-2xl font-black tracking-tight">${escapeHTML(category.name)}</h2>
-                </div>
-                <div class="text-right">
-                    <p class="text-stone-400 text-xs font-bold uppercase tracking-widest mb-1">Amount</p>
-                    <p class="text-white text-3xl font-black">₹${price}</p>
-                </div>
-            </div>
-
-            <!-- Payment Method Tabs -->
-            <div class="flex border-b border-stone-100 px-6 pt-4 gap-1" id="payment-tabs">
-                <button data-tab="upi" class="payment-tab px-4 py-2 text-sm font-bold rounded-t-xl border-b-2 border-stone-900 text-stone-900 transition-all">UPI</button>
-                <button data-tab="card" class="payment-tab px-4 py-2 text-sm font-bold rounded-t-xl border-b-2 border-transparent text-stone-400 hover:text-stone-700 transition-all">Card</button>
-                <button data-tab="bank" class="payment-tab px-4 py-2 text-sm font-bold rounded-t-xl border-b-2 border-transparent text-stone-400 hover:text-stone-700 transition-all">Net Banking</button>
-            </div>
-
-            <!-- Tab Content -->
-            <div class="px-8 py-6 min-h-[200px]" id="payment-tab-content">
-                <!-- UPI Tab (default) -->
-                <div id="tab-upi">
-                    <label class="block text-xs font-bold uppercase tracking-widest text-stone-400 mb-2">UPI ID</label>
-                    <input id="upi-input" type="text" placeholder="yourname@upi" class="w-full p-4 bg-stone-50 border-2 border-stone-200 rounded-2xl font-medium text-stone-700 focus:border-stone-900 outline-none transition-all text-sm">
-                    <p class="text-xs text-stone-400 mt-2 font-medium">e.g. 9876543210@paytm, name@okaxis</p>
-                </div>
-                <div id="tab-card" class="hidden space-y-3">
+        <div class="w-full max-w-md rounded-3xl overflow-hidden shadow-2xl transform transition-all scale-95 opacity-0" 
+             id="payment-modal-content"
+             style="background:white; border:1.5px solid rgba(99,102,241,0.15); position:relative;">
+            
+            <!-- Gradient Header -->
+            <div style="background:linear-gradient(135deg,#6366f1 0%,#8b5cf6 60%,#ec4899 100%); padding:28px 28px 24px;">
+                <div style="display:flex; justify-content:space-between; align-items:flex-start;">
                     <div>
-                        <label class="block text-xs font-bold uppercase tracking-widest text-stone-400 mb-2">Card Number</label>
-                        <input type="text" placeholder="1234 5678 9012 3456" maxlength="19" class="w-full p-4 bg-stone-50 border-2 border-stone-200 rounded-2xl font-medium text-stone-700 focus:border-stone-900 outline-none transition-all text-sm">
+                        <p style="color:rgba(255,255,255,0.65); font-size:11px; font-weight:800; letter-spacing:0.1em; text-transform:uppercase; margin-bottom:4px;">
+                            Unlock Premium Folder
+                        </p>
+                        <h2 style="color:white; font-size:22px; font-weight:900; letter-spacing:-0.02em; margin:0;">
+                            ${escapeHTML(category.name)}
+                        </h2>
                     </div>
-                    <div class="flex gap-3">
-                        <div class="flex-1">
-                            <label class="block text-xs font-bold uppercase tracking-widest text-stone-400 mb-2">Expiry</label>
-                            <input type="text" placeholder="MM/YY" maxlength="5" class="w-full p-4 bg-stone-50 border-2 border-stone-200 rounded-2xl font-medium text-stone-700 focus:border-stone-900 outline-none transition-all text-sm">
-                        </div>
-                        <div class="flex-1">
-                            <label class="block text-xs font-bold uppercase tracking-widest text-stone-400 mb-2">CVV</label>
-                            <input type="password" placeholder="•••" maxlength="3" class="w-full p-4 bg-stone-50 border-2 border-stone-200 rounded-2xl font-medium text-stone-700 focus:border-stone-900 outline-none transition-all text-sm">
-                        </div>
+                    <div style="text-align:right;">
+                        <p style="color:rgba(255,255,255,0.65); font-size:11px; font-weight:800; margin-bottom:4px;">Amount</p>
+                        <p style="color:white; font-size:32px; font-weight:900; margin:0;">₹${price}</p>
                     </div>
-                </div>
-                <div id="tab-bank" class="hidden">
-                    <label class="block text-xs font-bold uppercase tracking-widest text-stone-400 mb-2">Select Bank</label>
-                    <select class="w-full p-4 bg-stone-50 border-2 border-stone-200 rounded-2xl font-medium text-stone-700 focus:border-stone-900 outline-none transition-all text-sm">
-                        <option>State Bank of India</option>
-                        <option>HDFC Bank</option>
-                        <option>ICICI Bank</option>
-                        <option>Axis Bank</option>
-                        <option>Kotak Mahindra Bank</option>
-                        <option>Punjab National Bank</option>
-                    </select>
                 </div>
             </div>
 
-            <!-- Footer -->
-            <div class="px-8 pb-8 flex gap-3">
-                <button id="cancel-payment" class="flex-1 py-3 rounded-2xl font-bold text-stone-600 bg-stone-100 hover:bg-stone-200 transition-colors">Cancel</button>
-                <button id="confirm-payment" class="flex-1 py-4 rounded-2xl font-black text-white bg-stone-900 hover:bg-stone-800 transition-colors flex items-center justify-center gap-2">
-                    <span id="pay-text">Pay ₹${price}</span>
-                    <span id="pay-spinner" class="hidden"><i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i></span>
-                </button>
-            </div>
+            <!-- Body -->
+            <div id="pay-body" style="padding:24px 28px;">
+                <!-- Step 1: Pay -->
+                <div id="pay-step-1">
+                    <p style="font-weight:700; color:#1e1b4b; margin-bottom:16px; font-size:14px;">
+                        <span style="background:linear-gradient(135deg,#6366f1,#8b5cf6); color:white; border-radius:50%; width:22px; height:22px; display:inline-flex; align-items:center; justify-content:center; font-size:11px; font-weight:900; margin-right:8px;">1</span>
+                        Scan QR or use UPI ID to pay ₹${price}
+                    </p>
 
-            <!-- Success state (hidden) -->
-            <div id="payment-success" class="hidden absolute inset-0 bg-white rounded-3xl flex flex-col items-center justify-center gap-4 p-8">
-                <div class="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center">
-                    <i data-lucide="check-circle-2" class="w-10 h-10 text-green-600"></i>
+                    <!-- QR + UPI ID side by side -->
+                    <div style="display:flex; gap:16px; align-items:center; background:linear-gradient(135deg,rgba(99,102,241,0.04),rgba(139,92,246,0.06)); border:1.5px dashed rgba(99,102,241,0.3); border-radius:16px; padding:16px; margin-bottom:20px;">
+                        <div style="background:white; border-radius:12px; padding:8px; box-shadow:0 2px 8px rgba(0,0,0,0.08); flex-shrink:0;">
+                            <img src="${qrUrl}" 
+                                 alt="UPI QR Code" 
+                                 width="120" height="120"
+                                 style="display:block; border-radius:6px;"
+                                 onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'">
+                            <div style="display:none; width:120px; height:120px; align-items:center; justify-content:center; color:#6366f1; font-size:11px; text-align:center; font-weight:700;">Open any UPI app and pay manually</div>
+                        </div>
+                        <div style="flex:1; min-width:0;">
+                            <p style="font-size:11px; color:#6b7280; font-weight:700; text-transform:uppercase; letter-spacing:0.08em; margin-bottom:8px;">UPI ID</p>
+                            <div id="upi-id-display" 
+                                 style="background:rgba(99,102,241,0.05); border:1.5px dashed rgba(99,102,241,0.4); border-radius:10px; padding:10px 14px; font-family:monospace; font-size:14px; font-weight:700; color:#4338ca; cursor:pointer; word-break:break-all;"
+                                 onclick="navigator.clipboard.writeText('${upiId}').then(()=>{ this.style.background='rgba(16,185,129,0.1)'; this.style.borderColor='rgba(16,185,129,0.5)'; setTimeout(()=>{ this.style.background=''; this.style.borderColor=''; },1500); });"
+                                 title="Click to copy">
+                                ${upiId}
+                            </div>
+                            <p style="font-size:11px; color:#10b981; font-weight:700; margin-top:6px; display:flex; align-items:center; gap:4px;">
+                                <i data-lucide="copy" style="width:11px; height:11px;"></i> Click to copy
+                            </p>
+                            <p style="font-size:11px; color:#6b7280; margin-top:8px;">Works with GPay, PhonePe, Paytm, BHIM & all UPI apps</p>
+                        </div>
+                    </div>
+
+                    <p style="font-weight:700; color:#1e1b4b; margin-bottom:12px; font-size:14px;">
+                        <span style="background:linear-gradient(135deg,#6366f1,#8b5cf6); color:white; border-radius:50%; width:22px; height:22px; display:inline-flex; align-items:center; justify-content:center; font-size:11px; font-weight:900; margin-right:8px;">2</span>
+                        Enter your UTR / Reference ID after paying
+                    </p>
+
+                    <input type="text" 
+                           id="utr-input"
+                           placeholder="e.g. 123456789012 (12-digit UTR)" 
+                           maxlength="30"
+                           style="width:100%; padding:14px 16px; border:1.5px solid rgba(99,102,241,0.2); border-radius:14px; font-size:14px; font-weight:600; color:#1e1b4b; background:rgba(99,102,241,0.02); outline:none; margin-bottom:8px; box-sizing:border-box; transition:border-color 0.2s;"
+                           onfocus="this.style.borderColor='#6366f1'; this.style.boxShadow='0 0 0 3px rgba(99,102,241,0.12)'"
+                           onblur="this.style.borderColor='rgba(99,102,241,0.2)'; this.style.boxShadow='none'"
+                           oninput="document.getElementById('submit-utr-btn').disabled=this.value.trim().length<6">
+                    <p style="font-size:11px; color:#9ca3af; margin-bottom:20px;">Find the UTR in your UPI app under Payment History</p>
+
+                    <div style="display:flex; gap:10px;">
+                        <button id="cancel-payment" 
+                            style="flex:1; padding:14px; border-radius:14px; font-weight:700; color:#6b7280; background:#f3f4f6; border:none; cursor:pointer; transition:background 0.2s; font-size:14px;"
+                            onmouseover="this.style.background='#e5e7eb'" onmouseout="this.style.background='#f3f4f6'">
+                            Cancel
+                        </button>
+                        <button id="submit-utr-btn" disabled
+                            style="flex:2; padding:14px; border-radius:14px; font-weight:900; color:white; background:linear-gradient(135deg,#6366f1,#8b5cf6); border:none; cursor:pointer; font-size:14px; opacity:0.5; transition:opacity 0.2s, transform 0.15s; display:flex; align-items:center; justify-content:center; gap:8px;"
+                            onmouseover="if(!this.disabled){this.style.transform='translateY(-1px)'}"
+                            onmouseout="this.style.transform='translateY(0)'">
+                            <i data-lucide="send" style="width:16px; height:16px;"></i>
+                            <span id="submit-btn-text">Submit Payment</span>
+                        </button>
+                    </div>
                 </div>
-                <h3 class="text-2xl font-black text-stone-900">Payment Successful!</h3>
-                <p class="text-stone-500 text-center font-medium">"${escapeHTML(category.name)}" folder is now unlocked. Enjoy your quizzes!</p>
+
+                <!-- Step 2: Pending screen (hidden initially) -->
+                <div id="pay-step-2" style="display:none; text-align:center; padding:16px 0;">
+                    <div style="width:72px; height:72px; background:linear-gradient(135deg,rgba(99,102,241,0.12),rgba(139,92,246,0.15)); border-radius:50%; display:flex; align-items:center; justify-content:center; margin:0 auto 20px;"
+                         class="pending-pulse">
+                        <i data-lucide="clock" style="width:32px; height:32px; color:#6366f1;"></i>
+                    </div>
+                    <h3 style="font-size:20px; font-weight:900; color:#1e1b4b; margin-bottom:8px;">Request Submitted!</h3>
+                    <p style="color:#6b7280; font-size:14px; margin-bottom:20px; line-height:1.6;">
+                        Your payment request has been sent to the admin for verification.<br>
+                        <strong style="color:#6366f1;">Folder will unlock within a few hours</strong> once the admin approves your UTR.
+                    </p>
+                    <div style="background:rgba(99,102,241,0.06); border-radius:14px; padding:16px; text-align:left; margin-bottom:20px;">
+                        <p style="font-size:12px; color:#6b7280; font-weight:700; margin-bottom:4px;">Your UTR / Reference ID</p>
+                        <p id="confirmed-utr" style="font-family:monospace; font-size:15px; font-weight:900; color:#4338ca;"></p>
+                    </div>
+                    <button id="close-pending-modal"
+                        style="width:100%; padding:14px; border-radius:14px; font-weight:900; color:white; background:linear-gradient(135deg,#6366f1,#8b5cf6); border:none; cursor:pointer; font-size:14px;">
+                        Got it!
+                    </button>
+                </div>
             </div>
         </div>
     `;
 
     if(window.lucide) lucide.createIcons();
 
-    // Make the container relative so success overlay works
-    const modalContent = document.getElementById('payment-modal-content');
-    if(modalContent) modalContent.style.position = 'relative';
+    // Enable submit when UTR >= 6 chars (already handled by oninput, but ensure initial state)
+    const submitBtn = document.getElementById('submit-utr-btn');
+    if(submitBtn) submitBtn.disabled = true;
 
     container.classList.remove('hidden');
     requestAnimationFrame(() => {
         container.classList.replace('opacity-0', 'opacity-100');
-        if(modalContent) {
-            modalContent.classList.replace('scale-95', 'scale-100');
-            modalContent.classList.replace('opacity-0', 'opacity-100');
-        }
+        const mc = document.getElementById('payment-modal-content');
+        if(mc) { mc.classList.replace('scale-95', 'scale-100'); mc.classList.replace('opacity-0', 'opacity-100'); }
     });
 
     const closeModal = () => {
         container.classList.replace('opacity-100', 'opacity-0');
-        if(modalContent) {
-            modalContent.classList.replace('scale-100', 'scale-95');
-            modalContent.classList.replace('opacity-100', 'opacity-0');
-        }
-        setTimeout(() => {
-            container.classList.add('hidden');
-            container.innerHTML = '';
-        }, 300);
+        const mc = document.getElementById('payment-modal-content');
+        if(mc) { mc.classList.replace('scale-100', 'scale-95'); }
+        setTimeout(() => { container.classList.add('hidden'); container.innerHTML = ''; }, 300);
     };
 
-    // Tab switching logic
-    document.getElementById('payment-tabs')?.addEventListener('click', (e) => {
-        const tab = e.target.closest('[data-tab]')?.dataset.tab;
-        if (!tab) return;
-        document.querySelectorAll('.payment-tab').forEach(btn => {
-            btn.classList.remove('border-stone-900', 'text-stone-900');
-            btn.classList.add('border-transparent', 'text-stone-400');
-        });
-        e.target.classList.add('border-stone-900', 'text-stone-900');
-        e.target.classList.remove('border-transparent', 'text-stone-400');
+    document.getElementById('cancel-payment')?.addEventListener('click', closeModal);
+    container.addEventListener('click', (e) => { if(e.target === container) closeModal(); });
 
-        ['upi', 'card', 'bank'].forEach(t => {
-            const el = document.getElementById(`tab-${t}`);
-            if(el) el.classList.toggle('hidden', t !== tab);
-        });
+    // Enable/disable submit based on UTR length
+    document.getElementById('utr-input')?.addEventListener('input', (e) => {
+        const btn = document.getElementById('submit-utr-btn');
+        if(btn) {
+            btn.disabled = e.target.value.trim().length < 6;
+            btn.style.opacity = btn.disabled ? '0.5' : '1';
+            btn.style.cursor = btn.disabled ? 'not-allowed' : 'pointer';
+        }
     });
 
-    document.getElementById('cancel-payment')?.addEventListener('click', closeModal);
-    container.addEventListener('click', (e) => { if (e.target === container) closeModal(); });
+    // Submit payment request
+    submitBtn?.addEventListener('click', async () => {
+        const utr = document.getElementById('utr-input')?.value.trim();
+        if(!utr || utr.length < 6) return;
 
-    document.getElementById('confirm-payment')?.addEventListener('click', async () => {
-        const payBtn = document.getElementById('confirm-payment');
-        const payText = document.getElementById('pay-text');
-        const paySpinner = document.getElementById('pay-spinner');
-        
-        payBtn.disabled = true;
-        payText.textContent = 'Processing...';
-        paySpinner.classList.remove('hidden');
+        submitBtn.disabled = true;
+        submitBtn.style.opacity = '0.7';
+        document.getElementById('submit-btn-text').textContent = 'Submitting...';
+        submitBtn.querySelector('i[data-lucide="send"]')?.setAttribute('data-lucide', 'loader-2');
+        if(window.lucide) lucide.createIcons();
 
         try {
-            // Simulate 2s payment processing
-            await new Promise(resolve => setTimeout(resolve, 2000));
+            // Write payment request to Firestore
+            await addDoc(collection(db, 'payment_requests'), {
+                userId,
+                userEmail: userEmail || '',
+                categoryId: category.id,
+                categoryName: category.name,
+                amount: category.price || 50,
+                utr,
+                status: 'pending',
+                createdAt: new Date()
+            });
 
-            // Write to Firestore
-            const userDocRef = doc(db, 'users', userId);
-            const currentProfile = window.app?.state?.profile;
-            const currentUnlocked = currentProfile?.unlockedCategories || [];
-            
-            if (!currentUnlocked.includes(category.id)) {
-                await updateDoc(userDocRef, {
-                    unlockedCategories: [...currentUnlocked, category.id]
-                });
-                // Update local state immediately
-                if (window.app?.state?.profile) {
-                    window.app.state.profile.unlockedCategories = [...currentUnlocked, category.id];
-                }
-            }
+            // Show pending screen
+            document.getElementById('pay-step-1').style.display = 'none';
+            document.getElementById('pay-step-2').style.display = 'block';
+            document.getElementById('confirmed-utr').textContent = utr;
+            if(window.lucide) lucide.createIcons();
 
-            // Show success
-            const successOverlay = document.getElementById('payment-success');
-            if(successOverlay) {
-                successOverlay.classList.remove('hidden');
-                if(window.lucide) lucide.createIcons();
-            }
-
-            setTimeout(() => {
+            document.getElementById('close-pending-modal')?.addEventListener('click', () => {
                 closeModal();
-                if (onSuccess) onSuccess();
-            }, 2500);
+                if(onSuccess) onSuccess('pending');
+            });
 
         } catch(err) {
-            console.error('Payment error:', err);
-            showToast('Payment failed. Please try again.', 'error');
-            payBtn.disabled = false;
-            payText.textContent = `Pay ₹${price}`;
-            paySpinner.classList.add('hidden');
+            console.error('Payment request failed:', err);
+            submitBtn.disabled = false;
+            submitBtn.style.opacity = '1';
+            document.getElementById('submit-btn-text').textContent = 'Submit Payment';
+            const isPerms = err?.code === 'permission-denied';
+            showToast(isPerms ? '⛔ Sign in required to submit payment.' : `❌ Error: ${err.message}`, 'error');
         }
     });
 }
+
 export function openDeleteQuizModal(quizId) {
+
     const container = document.getElementById('confirm-modal-container');
     if (!container) return;
 

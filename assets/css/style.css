@@ -1,71 +1,371 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+/* ============================================================
+   QuizMaster – Design System
+   Advanced UI with CSS custom properties, glassmorphism,
+   gradient accents and purposeful micro-animations.
+   ============================================================ */
 
-/* Custom Scrollbar for Webkit */
-::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+/* ── 1. DESIGN TOKENS ─────────────────────────────────────── */
+:root {
+  /* Brand gradient */
+  --grad-primary:   linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #ec4899 100%);
+  --grad-warm:      linear-gradient(135deg, #f59e0b 0%, #ef4444 100%);
+  --grad-cool:      linear-gradient(135deg, #06b6d4 0%, #6366f1 100%);
+  --grad-green:     linear-gradient(135deg, #10b981 0%, #06b6d4 100%);
+  --grad-premium:   linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+
+  /* Surface colours */
+  --surface-0:      #ffffff;
+  --surface-1:      #f8f7ff;  /* Very light violet tint */
+  --surface-2:      #f0eeff;
+  --glass-bg:       rgba(255,255,255,0.65);
+  --glass-border:   rgba(255,255,255,0.5);
+
+  /* Text */
+  --text-primary:   #1e1b4b;   /* Deep indigo */
+  --text-secondary: #6b7280;
+  --text-muted:     #9ca3af;
+
+  /* Accents */
+  --accent-indigo:  #6366f1;
+  --accent-violet:  #8b5cf6;
+  --accent-pink:    #ec4899;
+  --accent-amber:   #f59e0b;
+  --accent-cyan:    #06b6d4;
+  --accent-emerald: #10b981;
+  --accent-red:     #ef4444;
+
+  /* Shadows */
+  --shadow-sm:      0 1px 3px rgba(99,102,241,0.08), 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-md:      0 4px 16px rgba(99,102,241,0.12), 0 2px 6px rgba(0,0,0,0.06);
+  --shadow-lg:      0 10px 40px rgba(99,102,241,0.18), 0 4px 12px rgba(0,0,0,0.08);
+  --shadow-xl:      0 20px 60px rgba(99,102,241,0.22), 0 8px 24px rgba(0,0,0,0.10);
+  --shadow-glow:    0 0 30px rgba(139,92,246,0.35);
+  --shadow-premium: 0 4px 20px rgba(245,158,11,0.35);
+
+  /* Radius */
+  --radius-sm: 10px;
+  --radius-md: 16px;
+  --radius-lg: 24px;
+  --radius-xl: 32px;
+
+  /* Transitions */
+  --transition-fast:   0.15s cubic-bezier(0.4,0,0.2,1);
+  --transition-base:   0.25s cubic-bezier(0.4,0,0.2,1);
+  --transition-slow:   0.4s cubic-bezier(0.4,0,0.2,1);
+  --transition-spring: 0.5s cubic-bezier(0.34,1.56,0.64,1);
 }
 
-::-webkit-scrollbar-track {
-  background: transparent;
-}
+/* ── 2. BASE RESET ─────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; }
 
-::-webkit-scrollbar-thumb {
-  background: #d6d3d1;
-  border-radius: 4px;
-}
+html { scroll-behavior: smooth; }
 
-::-webkit-scrollbar-thumb:hover {
-  background: #a8a29e;
-}
-
-/* Base resets & utilities */
 body {
+  background-color: var(--surface-1);
+  background-image:
+    radial-gradient(ellipse 80% 40% at 20% 0%, rgba(99,102,241,0.07) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 30% at 80% 100%, rgba(236,72,153,0.06) 0%, transparent 60%);
+  background-attachment: fixed;
+  min-height: 100vh;
+  color: var(--text-primary);
   -webkit-tap-highlight-color: transparent;
+  font-feature-settings: "kern" 1, "liga" 1;
+}
+
+/* ── 3. SCROLLBAR ──────────────────────────────────────────── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--accent-indigo); border-radius: 3px; opacity: 0.4; }
+::-webkit-scrollbar-thumb:hover { background: var(--accent-violet); }
+
+/* ── 4. NAVBAR OVERHAUL ────────────────────────────────────── */
+#navbar {
+  background: var(--glass-bg) !important;
+  backdrop-filter: blur(16px) saturate(180%);
+  -webkit-backdrop-filter: blur(16px) saturate(180%);
+  border-bottom: 1px solid var(--glass-border) !important;
+  box-shadow: 0 1px 20px rgba(99,102,241,0.08);
+}
+
+/* Logo Q badge gradient */
+#navbar .w-10.h-10.bg-stone-900 {
+  background: var(--grad-primary) !important;
+  box-shadow: var(--shadow-glow);
+}
+
+/* ── 5. CARDS & SURFACES ───────────────────────────────────── */
+
+/* Home topic/quiz cards */
+.bg-white {
+  background: var(--glass-bg) !important;
+  backdrop-filter: blur(12px) saturate(150%);
+  -webkit-backdrop-filter: blur(12px) saturate(150%);
+}
+
+/* Admin panel white card */
+#admin-content-area {
+  background: var(--glass-bg) !important;
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid var(--glass-border) !important;
+  box-shadow: var(--shadow-lg) !important;
+}
+
+/* ── 6. BUTTONS ────────────────────────────────────────────── */
+
+/* Primary dark button → gradient */
+.bg-stone-900, button.bg-stone-900 {
+  background: var(--grad-primary) !important;
+  border: none !important;
+  box-shadow: var(--shadow-md);
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast) !important;
+}
+.bg-stone-900:hover, button.bg-stone-900:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-lg) !important;
+}
+.bg-stone-900:active, button.bg-stone-900:active {
+  transform: scale(0.97);
+}
+
+/* ── 7. TOPIC FOLDER CARDS ─────────────────────────────────── */
+.cat-card, [onclick*="quizMasterSelectCategory"] {
+  border: 1.5px solid rgba(99,102,241,0.15) !important;
+  background: var(--glass-bg) !important;
+  transition: transform var(--transition-base), box-shadow var(--transition-base), border-color var(--transition-base) !important;
+}
+[onclick*="quizMasterSelectCategory"]:hover {
+  border-color: var(--accent-indigo) !important;
+  box-shadow: var(--shadow-md), 0 0 0 3px rgba(99,102,241,0.08) !important;
+  transform: translateY(-4px) scale(1.01) !important;
+}
+
+/* Locked folder card */
+[onclick*="quizMasterSelectCategory"].locked-folder,
+.folder-locked {
+  background: linear-gradient(135deg, rgba(245,158,11,0.08) 0%, rgba(239,68,68,0.06) 100%) !important;
+  border-color: rgba(245,158,11,0.4) !important;
+}
+
+/* ── 8. PREMIUM / LOCK BADGES ──────────────────────────────── */
+.badge-premium {
+  background: var(--grad-premium);
+  color: white;
+  font-weight: 900;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  font-size: 10px;
+  padding: 3px 8px;
+  border-radius: 99px;
+  box-shadow: var(--shadow-premium);
+}
+
+.badge-free {
+  background: var(--grad-green);
+  color: white;
+  font-weight: 900;
+  font-size: 10px;
+  padding: 3px 8px;
+  border-radius: 99px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+/* ── 9. ANIMATIONS ─────────────────────────────────────────── */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeOut {
+  from { opacity: 1; transform: translateY(0); }
+  to   { opacity: 0; transform: translateY(-8px); }
+}
+
+@keyframes scaleIn {
+  from { opacity: 0; transform: scale(0.92) translateY(8px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+@keyframes shimmer {
+  0%   { background-position: -1000px 0; }
+  100% { background-position:  1000px 0; }
+}
+
+@keyframes pulse-ring {
+  0%   { box-shadow: 0 0 0 0 rgba(99,102,241,0.4); }
+  70%  { box-shadow: 0 0 0 10px rgba(99,102,241,0); }
+  100% { box-shadow: 0 0 0 0 rgba(99,102,241,0); }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50%       { transform: translateY(-6px); }
+}
+
+@keyframes spin-smooth {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+@keyframes gradient-shift {
+  0%   { background-position: 0% 50%; }
+  50%  { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+@keyframes lock-wiggle {
+  0%, 100% { transform: rotate(0deg); }
+  20%  { transform: rotate(-8deg); }
+  40%  { transform: rotate(8deg); }
+  60%  { transform: rotate(-4deg); }
+  80%  { transform: rotate(4deg); }
+}
+
+.animate-in        { animation: fadeIn 0.35s ease-out forwards; }
+.animate-out       { animation: fadeOut 0.2s ease-in forwards; }
+.animate-scale-in  { animation: scaleIn 0.35s var(--transition-spring) forwards; }
+.animate-shimmer   {
+  animation: shimmer 2s infinite linear;
+  background: linear-gradient(to right, rgba(99,102,241,0.05) 4%, rgba(139,92,246,0.08) 25%, rgba(99,102,241,0.05) 36%);
+  background-size: 1000px 100%;
+}
+.animate-float     { animation: float 3s ease-in-out infinite; }
+.animate-pulse-ring { animation: pulse-ring 2s ease-out infinite; }
+.animate-lock-wiggle { animation: lock-wiggle 0.5s ease-in-out; }
+
+/* ── 10. FORM INPUTS ───────────────────────────────────────── */
+input[type="text"], input[type="password"], input[type="email"],
+input[type="number"], textarea, select {
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast) !important;
+}
+input:focus, textarea:focus, select:focus {
+  border-color: var(--accent-indigo) !important;
+  box-shadow: 0 0 0 3px rgba(99,102,241,0.12) !important;
+  outline: none;
 }
 
 select {
   appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23a8a29e' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%236366f1' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
   background-repeat: no-repeat;
   background-position: right 0.75rem center;
   background-size: 1em;
   padding-right: 2.5rem;
 }
 
-/* Animations that are tough in vanilla tailwind config */
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
+/* ── 11. MODAL OVERLAYS ────────────────────────────────────── */
+#share-modal-container,
+#confirm-modal-container {
+  backdrop-filter: blur(12px) saturate(180%);
+  -webkit-backdrop-filter: blur(12px) saturate(180%);
 }
 
-@keyframes fadeOut {
-  from { opacity: 1; transform: translateY(0); }
-  to { opacity: 0; transform: translateY(-10px); }
+/* Modal content base */
+#share-modal-content,
+#confirm-modal-content,
+#payment-modal-content {
+  background: var(--glass-bg);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--shadow-xl);
 }
 
-.animate-in {
-  animation: fadeIn 0.3s ease-out forwards;
+/* ── 12. ANNOUNCEMENT CARDS ──────────────────────────────────── */
+.bg-blue-50 {
+  background: linear-gradient(135deg, rgba(99,102,241,0.06) 0%, rgba(139,92,246,0.08) 100%) !important;
+  border-color: rgba(99,102,241,0.2) !important;
 }
 
-.animate-out {
-  animation: fadeOut 0.2s ease-in forwards;
+/* ── 13. QUIZ DIFFICULTY BADGES ─────────────────────────────── */
+.bg-green-100   { background: rgba(16,185,129,0.1) !important; }
+.text-green-600 { color: #10b981 !important; }
+.bg-red-100     { background: rgba(239,68,68,0.1) !important; }
+.text-red-600   { color: #ef4444 !important; }
+.bg-blue-100    { background: rgba(99,102,241,0.1) !important; }
+.text-blue-600  { color: #6366f1 !important; }
+
+/* ── 14. LOADING SPINNER ─────────────────────────────────────── */
+#global-loader {
+  background: linear-gradient(135deg, #f8f7ff 0%, #f0eeff 100%) !important;
+}
+.border-t-stone-900 { border-top-color: var(--accent-indigo) !important; }
+
+/* ── 15. ADMIN SIDEBAR TABS ──────────────────────────────────── */
+.bg-stone-900.text-white.shadow-lg {
+  background: var(--grad-primary) !important;
+  box-shadow: var(--shadow-md) !important;
 }
 
-/* Shimmer loading effect */
-@keyframes shimmer {
-  0% {
-    background-position: -1000px 0;
+/* ── 16. PAYMENT MODAL SPECIFIC STYLES ───────────────────────── */
+.upi-qr-container {
+  background: white;
+  border-radius: var(--radius-md);
+  padding: 12px;
+  box-shadow: var(--shadow-sm);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.payment-tab-active {
+  background: var(--grad-primary);
+  color: white;
+  box-shadow: var(--shadow-sm);
+}
+
+.upi-id-box {
+  background: linear-gradient(135deg, rgba(99,102,241,0.06) 0%, rgba(139,92,246,0.08) 100%);
+  border: 1.5px dashed rgba(99,102,241,0.35);
+  border-radius: var(--radius-md);
+  font-family: 'Courier New', monospace;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  user-select: all;
+  cursor: text;
+}
+
+.pending-pulse {
+  animation: pulse-ring 2s ease-out infinite;
+  border-radius: 50%;
+}
+
+/* ── 17. ACCESSIBILITY / REDUCED MOTION ──────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
   }
-  100% {
-    background-position: 1000px 0;
+}
+
+/* Focus visible outline for keyboard nav */
+:focus-visible {
+  outline: 3px solid var(--accent-indigo);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* ── 18. RESPONSIVE TWEAKS ───────────────────────────────────── */
+@media (max-width: 640px) {
+  :root {
+    --radius-lg: 18px;
+    --radius-xl: 22px;
   }
 }
 
-.animate-shimmer {
-  animation: shimmer 2s infinite linear;
-  background: linear-gradient(to right, #f6f7f8 4%, #edeef1 25%, #f6f7f8 36%);
-  background-size: 1000px 100%;
+/* ── 19. GRADIENT TEXT UTILITY ───────────────────────────────── */
+.text-gradient {
+  background: var(--grad-primary);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.text-gradient-warm {
+  background: var(--grad-warm);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
