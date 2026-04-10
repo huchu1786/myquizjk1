@@ -77,19 +77,17 @@ export function renderHome(container, appState) {
                 border-color: rgba(99,102,241,0.3);
             }
             .qm-locked-card {
-                background: linear-gradient(135deg, rgba(245,158,11,0.08), rgba(239,68,68,0.05));
-                backdrop-filter: blur(16px);
-                -webkit-backdrop-filter: blur(16px);
-                border: 2px solid rgba(245,158,11,0.35);
-                box-shadow: 0 2px 16px rgba(245,158,11,0.1);
+                background: linear-gradient(135deg, #f59e0b, #ef4444);
+                border: 2px solid rgba(255,255,255,0.4);
+                box-shadow: 0 4px 20px rgba(239,68,68,0.25);
                 border-radius: 20px; padding: 24px; cursor: pointer;
                 transition: transform 0.18s ease, box-shadow 0.18s ease;
                 position: relative; overflow: hidden;
             }
             .qm-locked-card:hover {
                 transform: translateY(-6px);
-                box-shadow: 0 16px 40px rgba(245,158,11,0.25);
-                border-color: rgba(245,158,11,0.55);
+                box-shadow: 0 16px 40px rgba(239,68,68,0.4);
+                border-color: rgba(255,255,255,0.8);
             }
             /* Quiz card in grid */
             .qm-quiz {
@@ -109,11 +107,9 @@ export function renderHome(container, appState) {
             }
             /* Locked quiz in grid — blurred content, paywall button */
             .qm-quiz-locked {
-                background: rgba(255,255,255,0.45);
-                backdrop-filter: blur(14px);
-                -webkit-backdrop-filter: blur(14px);
-                border: 2px solid rgba(245,158,11,0.3);
-                box-shadow: 0 2px 12px rgba(245,158,11,0.08);
+                background: linear-gradient(135deg, #f59e0b, #ef4444);
+                border: 2px solid rgba(255,255,255,0.4);
+                box-shadow: 0 2px 12px rgba(239,68,68,0.2);
                 border-radius: 18px; overflow: hidden;
                 transition: transform 0.18s ease, box-shadow 0.18s ease;
                 cursor: pointer;
@@ -121,7 +117,8 @@ export function renderHome(container, appState) {
             }
             .qm-quiz-locked:hover {
                 transform: translateY(-4px);
-                box-shadow: 0 12px 32px rgba(245,158,11,0.22);
+                box-shadow: 0 12px 32px rgba(239,68,68,0.35);
+                border-color: rgba(255,255,255,0.7);
             }
             .qm-blur-content {
                 filter: blur(4px);
@@ -133,8 +130,9 @@ export function renderHome(container, appState) {
                 display: flex; flex-direction: column;
                 align-items: center; justify-content: center;
                 padding: 16px; text-align: center;
-                background: rgba(255,252,240,0.6);
-                backdrop-filter: blur(2px);
+                background: linear-gradient(135deg, rgba(245,158,11,0.85), rgba(239,68,68,0.85));
+                backdrop-filter: blur(3px);
+                color: white;
             }
             .qm-btn {
                 width: 100%; padding: 11px; border-radius: 12px;
@@ -146,12 +144,13 @@ export function renderHome(container, appState) {
             .qm-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 14px rgba(99,102,241,0.35); }
             .qm-unlock-btn {
                 width: 100%; padding: 11px; border-radius: 12px;
-                font-weight: 800; font-size: 13px; color: white; border: none;
+                font-weight: 800; font-size: 13px; color: #ef4444; border: none;
                 cursor: pointer;
-                background: linear-gradient(135deg,#f59e0b,#ef4444);
+                background: white;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.15);
                 transition: transform 0.15s, box-shadow 0.15s;
             }
-            .qm-unlock-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 14px rgba(245,158,11,0.4); }
+            .qm-unlock-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 16px rgba(0,0,0,0.2); }
             .qm-icon { width:52px; height:52px; border-radius:14px; display:flex; align-items:center; justify-content:center; font-size:22px; margin-bottom:16px; }
             .qm-pill { padding:4px 10px; border-radius:99px; font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:0.05em; }
             .qm-mode-toggle { display:flex; background:rgba(99,102,241,0.07); padding:4px; border-radius:12px; gap:4px; }
@@ -301,10 +300,10 @@ function renderContent() {
             if (locked) {
                 return `
                     <div class="qm-locked-card" onclick="window.quizMasterSelectCategory('${escapeHTML(cat)}')">
-                        <div style="position:absolute;top:14px;right:14px;background:linear-gradient(135deg,#f59e0b,#d97706);color:white;font-size:9px;font-weight:900;text-transform:uppercase;letter-spacing:0.08em;padding:2px 9px;border-radius:99px;">PREMIUM</div>
-                        <div class="qm-icon" style="background:linear-gradient(135deg,rgba(245,158,11,0.15),rgba(239,68,68,0.1));">🔒</div>
-                        <h3 style="font-size:18px;font-weight:900;color:#1e1b4b;margin-bottom:4px;">${escapeHTML(cat)}</h3>
-                        <p style="color:#9ca3af;font-size:13px;font-weight:600;margin-bottom:16px;">${count} Quiz${count !== 1 ? 'zes' : ''}</p>
+                        <div style="position:absolute;top:14px;right:14px;background:rgba(255,255,255,0.25);color:white;font-size:9px;font-weight:900;text-transform:uppercase;letter-spacing:0.08em;padding:2px 9px;border-radius:99px;">PREMIUM</div>
+                        <div class="qm-icon" style="background:rgba(255,255,255,0.2);">🔒</div>
+                        <h3 style="font-size:18px;font-weight:900;color:white;margin-bottom:4px;">${escapeHTML(cat)}</h3>
+                        <p style="color:rgba(255,255,255,0.9);font-size:13px;font-weight:600;margin-bottom:16px;">${count} Quiz${count !== 1 ? 'zes' : ''}</p>
                         <button onclick="event.stopPropagation();window.quizMasterSelectCategory('${escapeHTML(cat)}')" class="qm-unlock-btn">🔑 Pay ₹${price} to Unlock</button>
                     </div>`;
             }
@@ -421,8 +420,8 @@ function renderContent() {
                         </div>
                         <!-- Lock overlay -->
                         <div class="qm-lock-overlay">
-                            <div style="font-size:28px;margin-bottom:6px;">🔒</div>
-                            <p style="font-size:12px;font-weight:900;color:#92400e;margin-bottom:10px;">Premium — ₹${price}</p>
+                            <div style="font-size:32px;margin-bottom:6px;">🔒</div>
+                            <p style="font-size:13px;font-weight:900;color:white;margin-bottom:12px;">Premium Folder — ₹${price}</p>
                             <button onclick="event.stopPropagation();window.quizMasterSelectCategory('${escapeHTML(q.category)}')" class="qm-unlock-btn" style="font-size:12px;padding:9px 14px;">🔑 Unlock Folder</button>
                         </div>
                     </div>`;
