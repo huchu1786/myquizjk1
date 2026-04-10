@@ -169,15 +169,23 @@ function renderCategoriesTab(container) {
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             ${adminState.categories.map(c => `
-                <div class="p-4 bg-white border border-stone-200 rounded-2xl flex items-center justify-between group shadow-sm">
+                <div class="p-4 bg-white border-2 ${c.isPremium ? 'border-yellow-200 bg-yellow-50' : 'border-stone-200'} rounded-2xl flex items-center justify-between group shadow-sm transition-colors">
                     <div class="flex items-center gap-3">
                         <i data-lucide="${c.isPremium ? 'lock' : 'folder'}" class="w-5 h-5 ${c.isPremium ? 'text-yellow-500' : 'text-stone-400'}"></i>
                         <span class="font-bold text-stone-700">${escapeHTML(c.name)}</span>
-                        ${c.isPremium ? `<span class="px-2 py-1 bg-yellow-100 text-yellow-800 text-[10px] font-black uppercase tracking-widest rounded-lg">₹${c.price || 50}</span>` : ''}
+                        ${c.isPremium ? `<span class="px-2 py-1 bg-yellow-100 text-yellow-800 text-[10px] font-black uppercase tracking-widest rounded-lg">₹${c.price || 50}</span>` : '<span class="px-2 py-1 bg-stone-100 text-stone-500 text-[10px] font-black uppercase tracking-widest rounded-lg">Free</span>'}
                     </div>
-                    <button onclick="window.adminDeleteCategory('${c.id}')" class="text-stone-300 hover:text-red-500 transition-colors p-2">
-                        <i data-lucide="trash-2" class="w-4 h-4"></i>
-                    </button>
+                    <div class="flex items-center gap-1">
+                        <button onclick="window.adminToggleCategoryLock('${c.id}', ${!!c.isPremium})" 
+                            class="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all ${c.isPremium ? 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200' : 'bg-stone-100 text-stone-600 hover:bg-stone-200'}" 
+                            title="${c.isPremium ? 'Click to make this folder free' : 'Click to lock this folder for ₹50'}">
+                            <i data-lucide="${c.isPremium ? 'lock-open' : 'lock'}" class="w-3.5 h-3.5"></i>
+                            ${c.isPremium ? 'Unlock' : 'Lock'}
+                        </button>
+                        <button onclick="window.adminDeleteCategory('${c.id}')" class="text-stone-300 hover:text-red-500 transition-colors p-2">
+                            <i data-lucide="trash-2" class="w-4 h-4"></i>
+                        </button>
+                    </div>
                 </div>
             `).join('')}
         </div>
@@ -288,6 +296,21 @@ window.adminAddCategory = async () => {
 window.adminDeleteCategory = async (id) => {
     if(confirm('Delete category?')) {
         await removeDocument('categories', id);
+    }
+}
+
+window.adminToggleCategoryLock = async (id, currentlyLocked) => {
+    try {
+        if (currentlyLocked) {
+            // Unlock: remove premium flag
+            await updateDocument('categories', id, { isPremium: false, price: 0 });
+        } else {
+            // Lock: set premium
+            await updateDocument('categories', id, { isPremium: true, price: 50 });
+        }
+    } catch(e) {
+        console.error(e);
+        alert('Error updating folder lock status: ' + e.message);
     }
 }
 
