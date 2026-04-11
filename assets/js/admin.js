@@ -1,5 +1,5 @@
 import { escapeHTML } from './ui.js';
-import { db, collection, doc, getDoc, query, orderBy, onSnapshot, updateDocument, addDocument, removeDocument } from './firebase-config.js';
+import { db, collection, doc, getDoc, query, orderBy, onSnapshot, updateDocument, addDocument, removeDocument, serverTimestamp } from './firebase-config.js';
 
 let adminState = {
     activeTab: 'quizzes',
@@ -375,7 +375,7 @@ window.adminAddCategory = async () => {
     const val = input.value.trim();
     if(!val) return;
     try {
-        const data = { name: val, createdAt: new Date() };
+        const data = { name: val, createdAt: serverTimestamp() };
         if (isPremiumInput && isPremiumInput.checked) {
             data.isPremium = true;
             data.price = 50;
@@ -384,8 +384,11 @@ window.adminAddCategory = async () => {
         input.value = '';
         if(isPremiumInput) isPremiumInput.checked = false;
     } catch(e) {
-        console.error(e);
-        alert('Error adding category');
+        console.error('Error adding category:', e);
+        const msg = (e.code === 'permission-denied' || e.message.includes('permission')) 
+            ? 'Permission Denied: Ensure you are logged in correctly and rules are applied.' 
+            : 'Error adding category: ' + e.message;
+        import('./ui.js').then(m => m.showToast(msg, 'error'));
     }
 }
 
