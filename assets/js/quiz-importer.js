@@ -136,16 +136,25 @@ async function saveImportedQuiz() {
 
     try {
         const quizData = {
-            title: importedQuizContent.title || 'Imported Quiz',
-            questionCount: importedQuizContent.questions.length,
+            title: String(importedQuizContent.title || 'Imported Quiz').substring(0, 100),
+            questionCount: Math.max(1, parseInt(importedQuizContent.questions.length) || 1),
             authorId: window.app.state.user.uid,
             createdAt: serverTimestamp()
         };
-        if (importedQuizContent.description) quizData.description = importedQuizContent.description;
-        if (importedQuizContent.category) quizData.category = importedQuizContent.category;
-        if (importedQuizContent.difficulty) quizData.difficulty = importedQuizContent.difficulty;
-        if (importedQuizContent.duration) quizData.duration = Number(importedQuizContent.duration);
-        if (importedQuizContent.timerType) quizData.timerType = importedQuizContent.timerType;
+        if (importedQuizContent.description) quizData.description = String(importedQuizContent.description).substring(0, 500);
+        if (importedQuizContent.category) quizData.category = String(importedQuizContent.category).substring(0, 100);
+        if (importedQuizContent.difficulty) {
+            const diff = String(importedQuizContent.difficulty).toLowerCase();
+            if (['easy', 'medium', 'hard'].includes(diff)) quizData.difficulty = diff;
+        }
+        if (importedQuizContent.duration) {
+            const dur = parseInt(importedQuizContent.duration);
+            if (!isNaN(dur) && dur > 0) quizData.duration = dur;
+        }
+        if (importedQuizContent.timerType) {
+            const tt = String(importedQuizContent.timerType).toLowerCase();
+            if (['quiz', 'question'].includes(tt)) quizData.timerType = tt;
+        }
 
         const newDocRef = await addDoc(collection(db, 'quizzes'), quizData);
         
@@ -156,14 +165,26 @@ async function saveImportedQuiz() {
             const qRef = doc(collection(db, 'questions'));
             const qData = {
                 quizId: newDocRef.id,
-                text: q.text || 'Untitled Question',
-                type: q.type || 'mcq',
-                points: Number(q.points) || 10
+                text: String(q.text || 'Untitled Question').substring(0, 2000),
+                type: String(q.type || 'mcq').toLowerCase(),
+                points: Math.max(0, parseInt(q.points) || 10)
             };
-            if (q.options) qData.options = q.options;
-            if (q.correctAnswerIndex !== undefined) qData.correctAnswerIndex = Number(q.correctAnswerIndex);
-            if (q.pairs) qData.pairs = q.pairs;
-            if (q.explanation) qData.explanation = q.explanation;
+            if (!['mcq', 'match'].includes(qData.type)) qData.type = 'mcq';
+            
+            if (qData.type === 'mcq' && Array.isArray(q.options) && q.options.length >= 2) {
+                qData.options = q.options.slice(0, 20);
+                if (q.correctAnswerIndex !== undefined) {
+                    qData.correctAnswerIndex = Math.max(0, parseInt(q.correctAnswerIndex) || 0);
+                }
+            } else if (qData.type === 'match' && Array.isArray(q.pairs)) {
+                qData.pairs = q.pairs;
+            } else {
+                qData.type = 'mcq';
+                qData.options = ['Option 1', 'Option 2'];
+                qData.correctAnswerIndex = 0;
+            }
+
+            if (q.explanation) qData.explanation = String(q.explanation).substring(0, 5000);
 
             batch.set(qRef, qData);
 
