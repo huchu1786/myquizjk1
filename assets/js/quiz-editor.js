@@ -1,4 +1,4 @@
-import { db, doc, getDoc, collection, addDoc, updateDoc, query, where, getDocs, writeBatch } from './firebase-config.js';
+import { db, doc, getDoc, collection, addDoc, updateDoc, query, where, getDocs, writeBatch, serverTimestamp } from './firebase-config.js';
 import { escapeHTML, showToast, showLoading } from './ui.js';
 
 let editorState = null;
@@ -197,22 +197,23 @@ window.editorSave = async () => {
     try {
         const quizData = {
             title: editorState.title,
-            description: editorState.description,
-            category: editorState.category,
-            difficulty: editorState.difficulty,
-            duration: editorState.duration || null,
-            timerType: editorState.timerType,
             questionCount: editorState.questions.length,
             authorId: window.app.state.user.uid
         };
+        if (editorState.description) quizData.description = editorState.description;
+        if (editorState.category) quizData.category = editorState.category;
+        if (editorState.difficulty) quizData.difficulty = editorState.difficulty;
+        if (editorState.duration) quizData.duration = Number(editorState.duration);
+        if (editorState.timerType) quizData.timerType = editorState.timerType;
 
         if (!editorState.id) {
-            quizData.createdAt = new Date();
+            quizData.createdAt = serverTimestamp();
             const docRef = await addDoc(collection(db, 'quizzes'), quizData);
             editorState.id = docRef.id;
         } else {
             await updateDoc(doc(db, 'quizzes', editorState.id), quizData);
         }
+
 
         // Save Questions via Batch (simplistic version: delete all old questions for this quiz, re-insert them)
         // A robust app would match IDs, but replacing is easier for UI builder parity.
@@ -236,12 +237,13 @@ window.editorSave = async () => {
                 quizId: editorState.id,
                 text: q.text || 'Untitled',
                 type: q.type,
-                options: q.options || [],
-                correctAnswerIndex: q.correctAnswerIndex !== undefined ? q.correctAnswerIndex : 0,
-                pairs: q.pairs || null,
-                points: q.points || 10,
-                explanation: q.explanation || ''
+                points: Number(q.points) || 10
             };
+            if (q.options) qDoc.options = q.options;
+            if (q.correctAnswerIndex !== undefined) qDoc.correctAnswerIndex = Number(q.correctAnswerIndex);
+            if (q.pairs) qDoc.pairs = q.pairs;
+            if (q.explanation) qDoc.explanation = q.explanation;
+
             batch.set(newRef, qDoc);
             q.id = newRef.id; // update local pointer 
             count++;
