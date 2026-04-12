@@ -1,4 +1,4 @@
-import { db, addDoc, collection, writeBatch, doc } from './firebase-config.js';
+import { db, addDoc, collection, writeBatch, doc, serverTimestamp } from './firebase-config.js';
 import { escapeHTML, showToast, showLoading } from './ui.js';
 
 let importedQuizContent = null;
@@ -137,15 +137,15 @@ async function saveImportedQuiz() {
     try {
         const quizData = {
             title: importedQuizContent.title || 'Imported Quiz',
-            description: importedQuizContent.description || '',
-            category: importedQuizContent.category || 'General',
-            difficulty: importedQuizContent.difficulty || 'medium',
-            duration: importedQuizContent.duration || null,
-            timerType: importedQuizContent.timerType || 'quiz',
             questionCount: importedQuizContent.questions.length,
             authorId: window.app.state.user.uid,
-            createdAt: new Date()
+            createdAt: serverTimestamp()
         };
+        if (importedQuizContent.description) quizData.description = importedQuizContent.description;
+        if (importedQuizContent.category) quizData.category = importedQuizContent.category;
+        if (importedQuizContent.difficulty) quizData.difficulty = importedQuizContent.difficulty;
+        if (importedQuizContent.duration) quizData.duration = Number(importedQuizContent.duration);
+        if (importedQuizContent.timerType) quizData.timerType = importedQuizContent.timerType;
 
         const newDocRef = await addDoc(collection(db, 'quizzes'), quizData);
         
@@ -154,16 +154,18 @@ async function saveImportedQuiz() {
 
         importedQuizContent.questions.forEach((q) => {
             const qRef = doc(collection(db, 'questions'));
-            batch.set(qRef, {
+            const qData = {
                 quizId: newDocRef.id,
                 text: q.text || 'Untitled Question',
                 type: q.type || 'mcq',
-                options: q.options || [],
-                correctAnswerIndex: q.correctAnswerIndex !== undefined ? q.correctAnswerIndex : 0,
-                pairs: q.pairs || null,
-                points: q.points || 10,
-                explanation: q.explanation || ''
-            });
+                points: Number(q.points) || 10
+            };
+            if (q.options) qData.options = q.options;
+            if (q.correctAnswerIndex !== undefined) qData.correctAnswerIndex = Number(q.correctAnswerIndex);
+            if (q.pairs) qData.pairs = q.pairs;
+            if (q.explanation) qData.explanation = q.explanation;
+
+            batch.set(qRef, qData);
 
             count++;
             if(count > 480) { batch.commit().then(()=>batch = writeBatch(db)); count = 0; }
